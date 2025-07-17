@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const connectDB = require('./db');
 const scraperRoutes = require('./scraper');
 const { ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
+const path = require('path');
 
 dotenv.config();
 const app = express();
@@ -27,6 +28,14 @@ app.use('/api/resume', resumeApi);
 
 const chatbotApi = require('./api/chatbot');
 app.use('/api/chatbot', chatbotApi);
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../../frontend/build')));
+
+// The "catchall" handler: for any request that doesn't match an API route, send back React's index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/build', 'index.html'));
+});
 
 // Protect routes
 app.use('/api/protected', ClerkExpressWithAuth(), (req, res) => {

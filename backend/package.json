@@ -4,8 +4,7 @@
   "description": "Backend for Opportunity Aggregator: Express, Puppeteer, MongoDB",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "start": "node src/server.js"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^5.1.6",
