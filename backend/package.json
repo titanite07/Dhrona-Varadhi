@@ -1,0 +1,27 @@
+{
+  "name": "opportunity-aggregator-backend",
+  "version": "1.0.0",
+  "description": "Backend for Opportunity Aggregator: Express, Puppeteer, MongoDB",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "cheerio": "^1.0.0-rc.12",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "mongoose": "^7.6.1",
+    "multer": "^2.0.1",
+    "openai": "^3.3.0",
+    "pdf-parse": "^1.1.1",
+    "puppeteer": "^21.3.8",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
