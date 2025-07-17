@@ -7,11 +7,13 @@ import BookmarksTab from './components/BookmarksTab';
 import Recommendations from './components/Recommendations';
 import ResumeUpload from './components/ResumeUpload';
 import Chatbot from './components/Chatbot';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import GlassdoorCarousel from './components/GlassdoorCarousel';
 import JobsPage from './components/JobsPage';
 import UnstopCarousel from './components/UnstopCarousel';
 import OpportunityCard from './components/OpportunityCard';
+import { SignIn, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
+import ProfilePage from './components/ProfilePage';
 
 const TABS = ['All', 'Jobs', 'Bookmarks', 'Recommended'];
 const SOURCE_ENDPOINTS = [
@@ -27,7 +29,7 @@ const GLASSDOOR_KEYWORDS = [
   'software', 'developer', 'engineer', 'data', 'ai', 'machine learning'
 ];
 
-function Navbar({ theme, setTheme }) {
+function Navbar({ theme, setTheme, userButton }) {
   const location = useLocation();
   const navTabs = [
     { name: 'All', path: '/' },
@@ -60,6 +62,7 @@ function Navbar({ theme, setTheme }) {
           </Link>
         ))}
         <DarkModeToggle theme={theme} setTheme={setTheme} iconOnly />
+        {userButton && <div className="flex items-center ml-2">{userButton}</div>}
       </div>
     </header>
   );
@@ -80,7 +83,7 @@ function MainApp(props) {
           <div />
           <SearchBar value={props.search} onChange={props.setSearch} />
         </div>
-        <ResumeUpload onParse={props.setResumeSkills} />
+        {/* Remove the upload resume section entirely */}
         {/* Unstop Section with Carousel and See More button (moved above Glassdoor) */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
@@ -88,7 +91,14 @@ function MainApp(props) {
             <Link to="/unstop" className="font-medium text-blue-600 hover:underline">See More &rarr;</Link>
           </div>
           <UnstopCarousel
-            opportunities={props.sourceData['Unstop'] || []}
+            opportunities={
+              (props.sourceData['Unstop'] || []).filter(
+                o =>
+                  o.title?.toLowerCase().includes(props.search.toLowerCase()) ||
+                  o.organization?.toLowerCase().includes(props.search.toLowerCase()) ||
+                  o.description?.toLowerCase().includes(props.search.toLowerCase())
+              )
+            }
             loading={!!props.sourceLoading['Unstop']}
             bookmarkedIds={props.bookmarkedIds}
             onBookmarkToggle={props.setBookmarkedIds && (url => {
@@ -113,7 +123,14 @@ function MainApp(props) {
             <Link to="/jobs" className="font-medium text-blue-600 hover:underline">See More &rarr;</Link>
           </div>
           <GlassdoorCarousel
-            opportunities={props.sourceData['Glassdoor'] || []}
+            opportunities={
+              (props.sourceData['Glassdoor'] || []).filter(
+                o =>
+                  o.title?.toLowerCase().includes(props.search.toLowerCase()) ||
+                  o.organization?.toLowerCase().includes(props.search.toLowerCase()) ||
+                  o.description?.toLowerCase().includes(props.search.toLowerCase())
+              )
+            }
             loading={!!props.sourceLoading['Glassdoor']}
             bookmarkedIds={props.bookmarkedIds}
             onBookmarkToggle={props.setBookmarkedIds && (url => {
@@ -137,7 +154,14 @@ function MainApp(props) {
             <div key={src.name}>
               <h3 className="mb-2 text-lg font-semibold text-gray-800 dark:text-gray-100">{src.name}</h3>
               <OpportunityList
-                opportunities={props.sourceData[src.name] || []}
+                opportunities={
+                  (props.sourceData[src.name] || []).filter(
+                    o =>
+                      o.title?.toLowerCase().includes(props.search.toLowerCase()) ||
+                      o.organization?.toLowerCase().includes(props.search.toLowerCase()) ||
+                      o.description?.toLowerCase().includes(props.search.toLowerCase())
+                  )
+                }
                 loading={!!props.sourceLoading[src.name]}
                 bookmarkedIds={props.bookmarkedIds}
                 onBookmarkToggle={props.setBookmarkedIds && (url => {
@@ -179,6 +203,7 @@ function App() {
   const [glassdoorJobs, setGlassdoorJobs] = useState([]);
   const [glassdoorLoading, setGlassdoorLoading] = useState(true);
   const [glassdoorError, setGlassdoorError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -261,32 +286,57 @@ function App() {
 
   // Pass all state/handlers as props to MainApp
   return (
-    <>
-      <Navbar theme={theme} setTheme={setTheme} />
-      <Routes>
-        <Route path="/" element={
-          <MainApp
-            tab={tab}
-            setTab={setTab}
-            search={search}
-            setSearch={setSearch}
-            theme={theme}
-            setTheme={setTheme}
-            resumeSkills={resumeSkills}
-            setResumeSkills={setResumeSkills}
-            showChatbot={showChatbot}
-            setShowChatbot={setShowChatbot}
-            sourceData={{ ...sourceData, Glassdoor: glassdoorJobs }}
-            sourceLoading={{ ...sourceLoading, Glassdoor: glassdoorLoading }}
-            sourceError={{ ...sourceError, Glassdoor: glassdoorError }}
+    <div>
+      <SignedOut>
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+          className="bg-gray-50 dark:bg-gray-900"
+        >
+          <SignIn />
+        </div>
+      </SignedOut>
+      <SignedIn>
+        <Navbar theme={theme} setTheme={setTheme} userButton={<UserButton onClick={() => navigate('/profile')} />} />
+        <Routes>
+          <Route path="/" element={
+            <MainApp
+              tab={tab}
+              setTab={setTab}
+              search={search}
+              setSearch={setSearch}
+              theme={theme}
+              setTheme={setTheme}
+              resumeSkills={resumeSkills}
+              setResumeSkills={setResumeSkills}
+              showChatbot={showChatbot}
+              setShowChatbot={setShowChatbot}
+              sourceData={{ ...sourceData, Glassdoor: glassdoorJobs }}
+              sourceLoading={{ ...sourceLoading, Glassdoor: glassdoorLoading }}
+              sourceError={{ ...sourceError, Glassdoor: glassdoorError }}
+              bookmarkedIds={bookmarkedIds}
+              setBookmarkedIds={setBookmarkedIds}
+            />
+          } />
+          <Route path="/jobs" element={<JobsCollectionPage
+            allJobs={Object.values(sourceData).flat().filter(j => j.type && j.type.toLowerCase().includes('job'))}
             bookmarkedIds={bookmarkedIds}
-            setBookmarkedIds={setBookmarkedIds}
-          />
-        } />
-        <Route path="/jobs" element={<JobsCollectionPage
-          allJobs={Object.values(sourceData).flat().filter(j => j.type && j.type.toLowerCase().includes('job'))}
-          bookmarkedIds={bookmarkedIds}
-          onBookmarkToggle={url => {
+            onBookmarkToggle={url => {
+              let updated;
+              if (bookmarkedIds.includes(url)) {
+                updated = bookmarkedIds.filter(b => b !== url);
+              } else {
+                updated = [...bookmarkedIds, url];
+              }
+              setBookmarkedIds(updated);
+              localStorage.setItem('bookmarks', JSON.stringify(updated));
+            }}
+          />} />
+          <Route path="/unstop" element={<UnstopPage opportunities={sourceData['Unstop'] || []} bookmarkedIds={bookmarkedIds} toggleBookmark={url => {
             let updated;
             if (bookmarkedIds.includes(url)) {
               updated = bookmarkedIds.filter(b => b !== url);
@@ -295,39 +345,37 @@ function App() {
             }
             setBookmarkedIds(updated);
             localStorage.setItem('bookmarks', JSON.stringify(updated));
-          }}
-        />} />
-        <Route path="/unstop" element={<UnstopPage opportunities={sourceData['Unstop'] || []} bookmarkedIds={bookmarkedIds} toggleBookmark={url => {
-          let updated;
-          if (bookmarkedIds.includes(url)) {
-            updated = bookmarkedIds.filter(b => b !== url);
-          } else {
-            updated = [...bookmarkedIds, url];
-          }
-          setBookmarkedIds(updated);
-          localStorage.setItem('bookmarks', JSON.stringify(updated));
-        }} />} />
-        <Route path="/bookmarks" element={<BookmarksTab
-          opportunities={Object.values(sourceData).flat()}
-          bookmarkedIds={bookmarkedIds}
-          onBookmarkToggle={url => {
-            let updated;
-            if (bookmarkedIds.includes(url)) {
-              updated = bookmarkedIds.filter(b => b !== url);
-            } else {
-              updated = [...bookmarkedIds, url];
-            }
-            setBookmarkedIds(updated);
-            localStorage.setItem('bookmarks', JSON.stringify(updated));
-          }}
-          onClearBookmarks={() => {
-            setBookmarkedIds([]);
-            localStorage.setItem('bookmarks', '[]');
-          }}
-        />} />
-        <Route path="/recommended" element={resumeSkills.length > 0 ? <Recommendations opportunities={recommended} bookmarks={bookmarkedIds} /> : <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-lg">Upload your resume to get smart recommendations!</div>} />
-      </Routes>
-    </>
+          }} />} />
+          <Route path="/bookmarks" element={<BookmarksTab
+            opportunities={Object.values(sourceData).flat()}
+            bookmarkedIds={bookmarkedIds}
+            onBookmarkToggle={url => {
+              let updated;
+              if (bookmarkedIds.includes(url)) {
+                updated = bookmarkedIds.filter(b => b !== url);
+              } else {
+                updated = [...bookmarkedIds, url];
+              }
+              setBookmarkedIds(updated);
+              localStorage.setItem('bookmarks', JSON.stringify(updated));
+            }}
+            onClearBookmarks={() => {
+              setBookmarkedIds([]);
+              localStorage.setItem('bookmarks', '[]');
+            }}
+          />} />
+          {/* Smart Recommendations Section (Under Development) */}
+          <Route path="/recommended" element={
+            <div className="flex flex-col items-center justify-center min-h-[40vh]">
+              <span className="inline-block px-4 py-2 text-lg font-semibold text-yellow-800 bg-yellow-200 rounded-full shadow-md animate-pulse">
+                Smart Recommendations (Under Development)
+              </span>
+            </div>
+          } />
+          <Route path="/profile" element={<ProfilePage theme={theme} />} />
+        </Routes>
+      </SignedIn>
+    </div>
   );
 }
 
@@ -341,18 +389,18 @@ function JobsCollectionPage({ allJobs = [], bookmarkedIds = [], onBookmarkToggle
     (typeFilter === 'All' || j.type === typeFilter)
   );
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-        <h1 className="text-2xl font-bold text-blue-700 dark:text-blue-300 flex items-center gap-2">
+    <div className="p-6 min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
+        <h1 className="flex gap-2 items-center text-2xl font-bold text-blue-700 dark:text-blue-300">
           <svg className="w-7 h-7 text-blue-600 dark:text-blue-300" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M0 0h24v24H0z" fill="none"/></svg>
           Jobs Collection
         </h1>
         <div className="flex gap-4 items-center">
-          <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)} className="px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)} className="px-3 py-2 bg-white rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-800">
             <option value="All">All Sources</option>
             {sources.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="px-3 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="px-3 py-2 bg-white rounded border border-gray-300 dark:border-gray-700 dark:bg-gray-800">
             <option value="All">All Types</option>
             {types.map(t => <option key={t} value={t}>{t}</option>)}
           </select>

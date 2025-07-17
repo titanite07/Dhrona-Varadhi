@@ -2,7 +2,6 @@ import React from 'react';
 import OpportunityCard from './OpportunityCard';
 
 function JobsPage({ jobs = [], bookmarkedIds = [], toggleBookmark }) {
-  // Fallback: get jobs from window if not passed as props (for router usage)
   const allJobs = jobs.length ? jobs : (window.__ALL_JOBS__ || []);
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">

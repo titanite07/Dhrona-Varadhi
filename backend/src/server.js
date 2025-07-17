@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./db');
 const scraperRoutes = require('./scraper');
+const { ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
 
 dotenv.config();
 const app = express();
@@ -26,6 +27,12 @@ app.use('/api/resume', resumeApi);
 
 const chatbotApi = require('./api/chatbot');
 app.use('/api/chatbot', chatbotApi);
+
+// Protect routes
+app.use('/api/protected', ClerkExpressWithAuth(), (req, res) => {
+  // req.auth contains user info
+  res.json({ message: "You are authenticated!", userId: req.auth.userId });
+});
 
 app.get('/', (req, res) => {
   res.send('Opportunity Aggregator Backend is running!');
